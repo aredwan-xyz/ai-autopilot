@@ -1,0 +1,53 @@
+# ============================================================
+# AI Autopilot — Agent Configuration
+# Modify schedules and parameters per your business needs
+# ============================================================
+
+agents:
+
+  email_agent:
+    enabled: true
+    schedule: "*/15 * * * *"        # Every 15 minutes
+    max_emails_per_run: 50
+    auto_reply: true
+    escalation_threshold: 0.7
+    escalation_channel: "#autopilot-alerts"
+
+  lead_agent:
+    enabled: true
+    schedule: "0 9,14 * * 1-5"      # 9am and 2pm weekdays
+    min_score_to_route: 65
+    crm_target: hubspot              # hubspot | airtable | notion
+
+  content_agent:
+    enabled: true
+    schedule: "0 8 * * 1-5"         # 8am weekdays
+    publish_platforms:
+      - linkedin
+      - twitter
+    auto_publish: false              # Set to true to skip Slack review gate
+
+  report_agent:
+    enabled: true
+    schedule: "0 7 * * 1"           # Every Monday at 7am
+    output_dir: ./reports
+    recipients:
+      - founder@company.com
+
+  invoice_agent:
+    enabled: true
+    schedule: "0 10 * * 1,3,5"      # Mon/Wed/Fri 10am
+    overdue_days: 14
+    critical_amount: 5000
+
+  support_agent:
+    enabled: false                   # Enable when support inbox is connected
+    schedule: "*/30 * * * *"
+    auto_respond: true
+    escalation_threshold: 0.6
+
+  research_agent:
+    enabled: true
+    schedule: ""                     # On-demand only, no automatic schedule
+    max_sources: 10
+    output_format: notion            # notion | slack | email

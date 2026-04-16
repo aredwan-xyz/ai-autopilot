@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Business Autopilot — Control Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #09090e;
+    --surface:     #0f0f17;
+    --surface-2:   #16161f;
+    --border:      #1e1e2e;
+    --border-bright: #2e2e45;
+    --gold:        #c9a840;
+    --gold-dim:    #8a7030;
+    --gold-glow:   rgba(201,168,64,0.12);
+    --green:       #2ecc71;
+    --green-dim:   rgba(46,204,113,0.15);
+    --red:         #e74c3c;
+    --red-dim:     rgba(231,76,60,0.15);
+    --amber:       #f39c12;
+    --amber-dim:   rgba(243,156,18,0.15);
+    --blue:        #5dade2;
+    --blue-dim:    rgba(93,173,226,0.15);
+    --text:        #e8e8f0;
+    --text-2:      #8888a8;
+    --text-3:      #555570;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(9,9,14,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    height: 56px;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--gold);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .logo span { color: var(--gold); }
+
+  .topbar-right {
+    display: flex; align-items: center; gap: 20px;
+  }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border-bright);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .time-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  /* ── Layout ── */
+  .container {
+    position: relative; z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 28px 60px;
+  }
+
+  /* ── Page title ── */
+  .page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .page-subtitle {
+    margin-top: 6px;
+    color: var(--text-2);
+    font-size: 12.5px;
+  }
+
+  .header-actions {
+    display: flex; gap: 10px;
+  }
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border-bright);
+    color: var(--text-2);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: #09090e;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover {
+    background: #d4b34a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(201,168,64,0.3);
+  }
+
+  /* ── KPI Row ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: var(--border-bright); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.gold::before  { background: var(--gold); }
+  .kpi-card.blue::before  { background: var(--blue); }
+  .kpi-card.amber::before { background: var(--amber); }
+
+  .kpi-label {
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .kpi-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 30px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .kpi-change {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-3);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .kpi-change .up { color: var(--green); }
+  .kpi-change .down { color: var(--red); }
+
+  /* ── Main grid ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Panel ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+  }
+
+  .panel-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--text-3);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Agent grid ── */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .agent-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .agent-card:hover {
+    border-color: var(--border-bright);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .agent-card.running {
+    border-color: var(--gold-dim);
+    background: linear-gradient(135deg, var(--surface-2), rgba(201,168,64,0.04));
+  }
+
+  .agent-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .agent-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .agent-status-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-idle    { background: rgba(100,100,120,0.2); color: var(--text-3); }
+  .badge-running { background: var(--amber-dim); color: var(--amber); }
+  .badge-success { background: var(--green-dim); color: var(--green); }
+  .badge-failed  { background: var(--red-dim); color: var(--red); }
+  .badge-skipped { background: rgba(100,100,120,0.2); color: var(--text-3); }
+
+  .agent-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12.5px;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .agent-meta {
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .agent-stats {
+    display: flex; gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .agent-stat {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+
+  .agent-stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .agent-stat-label {
+    font-size: 9px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .trigger-btn {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--text-2);
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .trigger-btn:hover {
+    background: var(--gold-glow);
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  /* ── Activity feed ── */
+  .activity-feed {
+    padding: 0;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+
+  .activity-feed::-webkit-scrollbar { width: 4px; }
+  .activity-feed::-webkit-scrollbar-track { background: transparent; }
+  .activity-feed::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+  .feed-item {
+    display: flex; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    animation: slide-in 0.3s ease forwards;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .feed-item:hover { background: rgba(255,255,255,0.02); }
+
+  .feed-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .dot-success { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-failed  { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .dot-running { background: var(--amber); box-shadow: 0 0 6px var(--amber);
+                 animation: pulse-dot 1s infinite; }
+  .dot-info    { background: var(--blue);  box-shadow: 0 0 6px var(--blue); }
+
+  .feed-content { flex: 1; min-width: 0; }
+
+  .feed-title {
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .feed-title strong { font-weight: 600; }
+
+  .feed-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+    display: flex; gap: 10px;
+  }
+
+  /* ── Bottom row ── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* ── Schedule table ── */
+  .schedule-list { padding: 8px 0; }
+
+  .schedule-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .schedule-item:last-child { border-bottom: none; }
+
+  .schedule-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .schedule-name {
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .schedule-cron {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+  }
+
+  /* ── Run history ── */
+  .run-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 60px 70px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    font-size: 11.5px;
+    transition: background 0.15s;
+  }
+
+  .run-row:hover { background: rgba(255,255,255,0.02); }
+  .run-row.header { color: var(--text-3); font-size: 10px; text-transform: uppercase;
+                    letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace; }
+
+  .run-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+  }
+
+  .run-agent { color: var(--text); font-weight: 500; }
+
+  .run-duration {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+    text-align: right;
+  }
+
+  /* ── Stats mini chart ── */
+  .mini-chart {
+    padding: 16px 18px;
+  }
+
+  .chart-bars {
+    display: flex; align-items: flex-end; gap: 4px;
+    height: 60px;
+    margin-top: 16px;
+  }
+
+  .bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    background: var(--border-bright);
+    transition: all 0.3s ease;
+    min-height: 4px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bar:hover { opacity: 0.8; }
+  .bar.gold { background: var(--gold); }
+  .bar.green { background: var(--green); }
+  .bar.today { background: var(--gold); box-shadow: 0 0 8px var(--gold-glow); }
+
+  .chart-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-3);
+  }
+
+  /* ── WS connection badge ── */
+  .ws-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--text-3);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .ws-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-3);
+  }
+
+  .ws-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  /* ── Loading shimmer ── */
+  .shimmer {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    height: 14px;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── Trigger modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 16px;
+    padding: 28px;
+    width: 380px;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+
+  .modal-overlay.show .modal { transform: translateY(0); }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+
+  .modal-desc {
+    color: var(--text-2);
+    font-size: 12px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── Toast ── */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 300;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .toast {
+    padding: 12px 18px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-bright);
+    font-size: 12px;
+    display: flex; align-items: center; gap: 10px;
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    max-width: 320px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  .toast.show { transform: translateX(0); }
+  .toast.toast-success .toast-icon { color: var(--green); }
+  .toast.toast-error   .toast-icon { color: var(--red); }
+  .toast.toast-info    .toast-icon { color: var(--blue); }
+
+  @media (max-width: 1100px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .bottom-row { grid-template-columns: 1fr; }
+    .agents-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">⚡</div>
+    AI <span>Autopilot</span>
+  </div>
+  <div class="topbar-right">
+    <div class="ws-badge">
+      <div class="ws-dot" id="wsDot"></div>
+      <span id="wsStatus">connecting...</span>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      System Operational
+    </div>
+    <div class="time-display" id="clockDisplay">--:--:--</div>
+  </div>
+</div>
+
+<!-- Main container -->
+<div class="container">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Control Center</div>
+      <div class="page-subtitle">6 agents active · Last run <span id="lastRunTime">—</span></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" onclick="refreshAll()">↻ Refresh</button>
+      <button class="btn btn-primary" onclick="showRunAll()">▶ Run All Agents</button>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi-card green">
+      <div class="kpi-label">Emails Triaged Today</div>
+      <div class="kpi-value" id="kpiEmails">—</div>
+      <div class="kpi-change"><span class="up">↑</span> <span id="kpiEmailsSub">Auto-replied 14</span></div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-label">Leads Qualified</div>
+      <div class="kpi-value" id="kpiLeads">—</div>
+      <div class="kpi-change"><span class="up">↑</span> <span id="kpiLeadsSub">CRM synced</span></div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Content Published</div>
+      <div class="kpi-value" id="kpiContent">—</div>
+      <div class="kpi-change"><span id="kpiContentSub">Across platforms</span></div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Agent Runs (7d)</div>
+      <div class="kpi-value" id="kpiRuns">—</div>
+      <div class="kpi-change"><span id="kpiRunsSub">Avg 2.1s per run</span></div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+    <!-- Agents panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Active Agents</div>
+        <div class="panel-badge" id="agentCount">loading...</div>
+      </div>
+      <div class="agents-grid" id="agentsGrid">
+        <!-- populated by JS -->
+        <div class="shimmer" style="height:130px;border-radius:10px;"></div>
+        <div class="shimmer" style="height:130px;border-radius:10px;"></div>
+        <div class="shimmer" style="height:130px;border-radius:10px;"></div>
+        <div class="shimmer" style="height:130px;border-radius:10px;"></div>
+      </div>
+    </div>
+
+    <!-- Activity feed -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Live Activity</div>
+        <div class="panel-badge" id="feedCount">0 events</div>
+      </div>
+      <div class="activity-feed" id="activityFeed">
+        <div style="padding:24px 18px;color:var(--text-3);font-size:12px;text-align:center;">
+          Waiting for live events...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bottom-row">
+    <!-- Schedule -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Upcoming Runs</div>
+        <div class="panel-badge">Scheduled</div>
+      </div>
+      <div class="schedule-list" id="scheduleList">
+        <div style="padding:20px 18px;color:var(--text-3);font-size:12px;">Loading schedule...</div>
+      </div>
+    </div>
+
+    <!-- Run history -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Run History</div>
+        <div class="panel-badge" id="historyCount">—</div>
+      </div>
+      <div>
+        <div class="run-row header">
+          <span>ID</span><span>Agent</span><span>Status</span><span>Duration</span>
+        </div>
+        <div id="runHistory">
+          <div style="padding:20px 18px;color:var(--text-3);font-size:12px;">Loading runs...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly activity chart -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Weekly Activity</div>
+        <div class="panel-badge">Runs per day</div>
+      </div>
+      <div class="mini-chart">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-3);">Total this week</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin-top:2px;" id="weeklyTotal">—</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--green);">↑ 23%</div>
+            <div style="font-size:10px;color:var(--text-3);">vs last week</div>
+          </div>
+        </div>
+        <div class="chart-bars" id="chartBars"></div>
+        <div class="chart-labels" id="chartLabels"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Trigger modal -->
+<div class="modal-overlay" id="triggerModal">
+  <div class="modal">
+    <div class="modal-title">Trigger Agent</div>
+    <div class="modal-desc" id="modalDesc">Run this agent manually outside its schedule.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmTrigger()">▶ Run Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let ws = null;
+let agentData = [];
+let runHistory = [];
+let feedItems = [];
+let pendingTrigger = null;
+
+const AGENT_META = {
+  email_agent:    { icon: '📧', label: 'Email Agent',    bg: '#1a1a2e', schedule: '*/15 * * * *' },
+  lead_agent:     { icon: '🎯', label: 'Lead Agent',     bg: '#1a2218', schedule: '0 9,14 * * 1-5' },
+  content_agent:  { icon: '✍️', label: 'Content Agent',  bg: '#1a1e2e', schedule: '0 8 * * 1-5' },
+  report_agent:   { icon: '📊', label: 'Report Agent',   bg: '#21191a', schedule: '0 7 * * 1' },
+  invoice_agent:  { icon: '💰', label: 'Invoice Agent',  bg: '#1e1d15', schedule: '0 10 * * 1,3,5' },
+  research_agent: { icon: '🔬', label: 'Research Agent', bg: '#1a1a2e', schedule: 'On-demand' },
+};
+
+// ─────────────────────────────────────────────
+// Clock
+// ─────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockDisplay').textContent =
+    now.toLocaleTimeString('en-US', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─────────────────────────────────────────────
+// WebSocket
+// ─────────────────────────────────────────────
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+
+  ws.onopen = () => {
+    document.getElementById('wsDot').classList.add('connected');
+    document.getElementById('wsStatus').textContent = 'live';
+    toast('Connected to live feed', 'success');
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.event === 'status') handleStatus(msg.data);
+    if (msg.event === 'agent_run_complete') handleRunComplete(msg.data);
+  };
+
+  ws.onclose = () => {
+    document.getElementById('wsDot').classList.remove('connected');
+    document.getElementById('wsStatus').textContent = 'reconnecting...';
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+// ─────────────────────────────────────────────
+// API helpers
+// ─────────────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const data = await r.json();
+    handleStatus(data);
+  } catch (e) {
+    // Use mock data when server isn't running
+    loadMockData();
+  }
+}
+
+async function fetchRuns() {
+  try {
+    const r = await fetch('/api/runs?limit=20');
+    const data = await r.json();
+    renderRunHistory(data);
+  } catch(e) {}
+}
+
+async function triggerAgent(name) {
+  try {
+    toast(`Triggering ${name}...`, 'info');
+    const r = await fetch(`/api/trigger/${name}`, { method: 'POST' });
+    const data = await r.json();
+    toast(`${name} completed: ${data.status}`, data.status === 'success' ? 'success' : 'error');
+    addFeedItem({ agent: name, status: data.status, ...data });
+    await fetchStatus();
+  } catch(e) {
+    toast(`Failed to trigger ${name}`, 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────────
+function handleStatus(data) {
+  agentData = data.active_agents || [];
+  renderAgents(agentData, data.recent_runs || []);
+  renderSchedule(data.scheduled_jobs || []);
+  renderRunHistory(data.recent_runs || []);
+  updateKPIs(data.recent_runs || []);
+  renderWeeklyChart(data.recent_runs || []);
+
+  const lastRun = data.recent_runs?.find(r => r.started_at);
+  if (lastRun) {
+    document.getElementById('lastRunTime').textContent =
+      new Date(lastRun.started_at).toLocaleTimeString();
+  }
+}
+
+function renderAgents(names, runs) {
+  const grid = document.getElementById('agentsGrid');
+  const runMap = {};
+  for (const r of runs) {
+    if (!runMap[r.agent] || new Date(r.started_at) > new Date(runMap[r.agent].started_at)) {
+      runMap[r.agent] = r;
+    }
+  }
+
+  const allAgents = Object.keys(AGENT_META);
+  document.getElementById('agentCount').textContent = `${names.length || allAgents.length} agents`;
+
+  grid.innerHTML = allAgents.map(name => {
+    const meta = AGENT_META[name];
+    const run = runMap[name];
+    const status = run?.status || 'idle';
+    const isRunning = status === 'running';
+
+    return `
+      <div class="agent-card ${isRunning ? 'running' : ''}" onclick="showTriggerModal('${name}')">
+        <div class="agent-top">
+          <div class="agent-icon" style="background:${meta.bg}">${meta.icon}</div>
+          <span class="agent-status-badge badge-${status}">${status}</span>
+        </div>
+        <div class="agent-name">${meta.label}</div>
+        <div class="agent-meta">${meta.schedule}</div>
+        <div class="agent-stats">
+          <div class="agent-stat">
+            <span class="agent-stat-val">${run?.items_processed ?? '—'}</span>
+            <span class="agent-stat-label">Processed</span>
+          </div>
+          <div class="agent-stat">
+            <span class="agent-stat-val">${run?.items_actioned ?? '—'}</span>
+            <span class="agent-stat-label">Actioned</span>
+          </div>
+          <div class="agent-stat">
+            <span class="agent-stat-val">${run?.duration_s ? run.duration_s.toFixed(1)+'s' : '—'}</span>
+            <span class="agent-stat-label">Duration</span>
+          </div>
+        </div>
+        <button class="trigger-btn" onclick="event.stopPropagation();triggerAgent('${name}')">▶ Run</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderSchedule(jobs) {
+  const list = document.getElementById('scheduleList');
+  if (!jobs.length) {
+    const schedules = Object.entries(AGENT_META).map(([name, meta]) => ({
+      name: meta.label, schedule: meta.schedule, next: 'Next scheduled run'
+    }));
+    list.innerHTML = schedules.map(s => `
+      <div class="schedule-item">
+        <span class="schedule-time">${s.next}</span>
+        <span class="schedule-name">${s.name}</span>
+        <span class="schedule-cron">${s.schedule}</span>
+      </div>
+    `).join('');
+    return;
+  }
+
+  list.innerHTML = jobs.slice(0, 6).map(j => {
+    const meta = AGENT_META[j.id] || {};
+    const next = j.next_run ? new Date(j.next_run).toLocaleTimeString() : 'N/A';
+    return `
+      <div class="schedule-item">
+        <span class="schedule-time">${next}</span>
+        <span class="schedule-name">${meta.label || j.id}</span>
+        <span class="schedule-cron">${meta.schedule || ''}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRunHistory(runs) {
+  const container = document.getElementById('runHistory');
+  document.getElementById('historyCount').textContent = `${runs.length} runs`;
+
+  if (!runs.length) {
+    container.innerHTML = `<div style="padding:20px 18px;color:var(--text-3);font-size:12px;">No runs yet</div>`;
+    return;
+  }
+
+  const statusColors = { success: 'var(--green)', failed: 'var(--red)', running: 'var(--amber)', idle: 'var(--text-3)' };
+  container.innerHTML = runs.slice(0, 8).map(r => `
+    <div class="run-row">
+      <span class="run-id">#${r.run_id || '—'}</span>
+      <span class="run-agent">${AGENT_META[r.agent]?.label || r.agent || '—'}</span>
+      <span style="font-size:10px;color:${statusColors[r.status] || 'var(--text-3)'};">${r.status || '—'}</span>
+      <span class="run-duration">${r.duration_s ? r.duration_s.toFixed(1)+'s' : '—'}</span>
+    </div>
+  `).join('');
+}
+
+function updateKPIs(runs) {
+  const emailRuns = runs.filter(r => r.agent === 'email_agent');
+  const leadRuns  = runs.filter(r => r.agent === 'lead_agent');
+  const contentRuns = runs.filter(r => r.agent === 'content_agent');
+
+  document.getElementById('kpiEmails').textContent =
+    emailRuns.reduce((s, r) => s + (r.items_processed || 0), 0) || '—';
+  document.getElementById('kpiLeads').textContent =
+    leadRuns.reduce((s, r) => s + (r.items_actioned || 0), 0) || '—';
+  document.getElementById('kpiContent').textContent =
+    contentRuns.reduce((s, r) => s + (r.items_actioned || 0), 0) || '—';
+  document.getElementById('kpiRuns').textContent = runs.length || '—';
+  document.getElementById('weeklyTotal').textContent = runs.length || '—';
+}
+
+function renderWeeklyChart(runs) {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const today = new Date().getDay();
+  const counts = new Array(7).fill(0);
+
+  for (const r of runs) {
+    if (r.started_at) {
+      const d = new Date(r.started_at).getDay();
+      counts[d === 0 ? 6 : d - 1]++;
+    }
+  }
+
+  // Fallback demo data
+  const demoData = [12, 18, 9, 22, 16, 4, 7];
+  const data = runs.length ? counts : demoData;
+  const max = Math.max(...data, 1);
+
+  const barsEl = document.getElementById('chartBars');
+  const labelsEl = document.getElementById('chartLabels');
+
+  barsEl.innerHTML = data.map((v, i) => {
+    const isToday = i === (today === 0 ? 6 : today - 1);
+    const h = Math.max(4, (v / max) * 60);
+    return `<div class="bar ${isToday ? 'today' : ''}" style="height:${h}px;" title="${v} runs"></div>`;
+  }).join('');
+
+  labelsEl.innerHTML = days.map(d => `<span>${d}</span>`).join('');
+}
+
+// ─────────────────────────────────────────────
+// Feed
+// ─────────────────────────────────────────────
+function addFeedItem(data) {
+  feedItems.unshift(data);
+  if (feedItems.length > 50) feedItems.pop();
+  document.getElementById('feedCount').textContent = `${feedItems.length} events`;
+
+  const feed = document.getElementById('activityFeed');
+  const dotClass = {
+    success: 'dot-success', failed: 'dot-failed',
+    running: 'dot-running',
+  }[data.status] || 'dot-info';
+
+  const meta = AGENT_META[data.agent] || {};
+  const time = new Date().toLocaleTimeString();
+
+  const el = document.createElement('div');
+  el.className = 'feed-item';
+  el.innerHTML = `
+    <div class="feed-dot ${dotClass}"></div>
+    <div class="feed-content">
+      <div class="feed-title">
+        <strong>${meta.label || data.agent}</strong>
+        ${data.status === 'success' ? `processed ${data.items_processed || 0} items` :
+          data.status === 'failed' ? 'failed — check logs' :
+          'run completed'}
+      </div>
+      <div class="feed-meta">
+        <span>${time}</span>
+        ${data.duration_s ? `<span>${data.duration_s.toFixed(1)}s</span>` : ''}
+        ${data.items_actioned ? `<span>${data.items_actioned} actioned</span>` : ''}
+      </div>
+    </div>
+  `;
+
+  const placeholder = feed.querySelector('div[style*="padding:24px"]');
+  if (placeholder) placeholder.remove();
+
+  feed.prepend(el);
+}
+
+function handleRunComplete(run) {
+  addFeedItem(run);
+  fetchRuns();
+}
+
+// ─────────────────────────────────────────────
+// Modal
+// ─────────────────────────────────────────────
+function showTriggerModal(agentName) {
+  pendingTrigger = agentName;
+  const meta = AGENT_META[agentName] || {};
+  document.getElementById('modalDesc').textContent =
+    `Run ${meta.label || agentName} now, outside its regular schedule?`;
+  document.getElementById('triggerModal').classList.add('show');
+}
+
+function showRunAll() {
+  pendingTrigger = '__all__';
+  document.getElementById('modalDesc').textContent =
+    'This will sequentially trigger all 6 active agents. This may take a few minutes.';
+  document.getElementById('triggerModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('triggerModal').classList.remove('show');
+  pendingTrigger = null;
+}
+
+async function confirmTrigger() {
+  closeModal();
+  if (pendingTrigger === '__all__') {
+    for (const name of Object.keys(AGENT_META)) {
+      await triggerAgent(name);
+      await new Promise(r => setTimeout(r, 500));
+    }
+  } else if (pendingTrigger) {
+    await triggerAgent(pendingTrigger);
+  }
+}
+
+document.getElementById('triggerModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ─────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────
+function toast(message, type = 'info') {
+  const icons = { success: '✓', error: '✕', info: '→' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.classList.add('show'), 10);
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 400);
+  }, 3500);
+}
+
+// ─────────────────────────────────────────────
+// Mock data (when API is unavailable)
+// ─────────────────────────────────────────────
+function loadMockData() {
+  const mockRuns = [
+    { run_id: 'a1b2', agent: 'email_agent', status: 'success', items_processed: 23, items_actioned: 17, duration_s: 4.2, started_at: new Date().toISOString() },
+    { run_id: 'c3d4', agent: 'lead_agent',  status: 'success', items_processed: 8,  items_actioned: 5,  duration_s: 6.8, started_at: new Date(Date.now()-900000).toISOString() },
+    { run_id: 'e5f6', agent: 'content_agent', status: 'success', items_processed: 3, items_actioned: 2, duration_s: 9.1, started_at: new Date(Date.now()-3600000).toISOString() },
+    { run_id: 'g7h8', agent: 'invoice_agent', status: 'failed', items_processed: 12, items_actioned: 0, duration_s: 1.2, started_at: new Date(Date.now()-7200000).toISOString() },
+    { run_id: 'i9j0', agent: 'report_agent', status: 'success', items_processed: 1, items_actioned: 1, duration_s: 18.4, started_at: new Date(Date.now()-86400000).toISOString() },
+  ];
+
+  handleStatus({
+    active_agents: Object.keys(AGENT_META),
+    scheduled_jobs: [],
+    recent_runs: mockRuns,
+  });
+
+  mockRuns.forEach(r => addFeedItem(r));
+  toast('Dashboard loaded in demo mode', 'info');
+}
+
+// ─────────────────────────────────────────────
+// Refresh
+// ─────────────────────────────────────────────
+async function refreshAll() {
+  await fetchStatus();
+  await fetchRuns();
+  toast('Dashboard refreshed', 'info');
+}
+
+// ─────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────
+(async function init() {
+  await fetchStatus();
+  connectWS();
+})();
+</script>
+</body>
+</html>
